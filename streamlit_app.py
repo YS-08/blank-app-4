@@ -140,4 +140,4 @@ def create_public_data_dashboard():
     )
     
     fig, ax = plt.subplots(figsize=(12, 8))
-    world.plot(ax
+    world.plot(ax=ax)
