@@ -1,7 +1,3 @@
 streamlit
-pandas
-altair
-requests
-geopandas
-matplotlib
 Pillow
+requests
