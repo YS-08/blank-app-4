@@ -51,25 +51,24 @@ def apply_font_to_altair(chart):
         labelFont=font_name
     )
 
-
-# 사이드바 배너 HTML
-banner_html = """
-<div style="background-color:#F0F2F6; padding:15px; border-radius:10px; text-align:center;">
-    <h3 style="color:#262730; font-family: 'Pretendard-Bold', sans-serif;">기후 변화와 산호초 백화 현상</h3>
-    <a href="https://www.sciencetimes.co.kr/nscvrg/view/menu/253?searchCategory=225&nscvrgSn=252864" target="_blank" style="text-decoration:none; color:#1C68D5;">
-        <p style="font-size:14px; margin:0;">
-            <span style="font-family: 'Pretendard-Bold', sans-serif;">▶︎ 기사 1: 폭염에 끓어오르는 바다, 산호초 대규모 백화현상</span>
-        </p>
-    </a>
-    <a href="https://www.planet03.com/post/%EC%8B%9D%EB%9F%89%EC%9C%84%EA%B8%B0-%EB%B0%94%EB%8B%A4%EA%B0%80-%EB%B3%B4%EB%82%B4%EB%8A%94-%EA%B2%BD%EA%B3%A0" target="_blank" style="text-decoration:none; color:#1C68D5;">
-        <p style="font-size:14px; margin-top:5px; margin-bottom:0;">
-            <span style="font-family: 'Pretendard-Bold', sans-serif;">▶︎ 기사 2: 식량위기, 바다가 보내는 경고</span>
-        </p>
-    </a>
-</div>
-"""
-
-st.sidebar.markdown(banner_html, unsafe_allow_html=True)
+# 뉴스 기사 배너 HTML (메인 페이지 하단에 위치)
+def show_news_banner():
+    banner_html = """
+    <div style="background-color:#F0F2F6; padding:15px; border-radius:10px; text-align:center; margin-top: 50px;">
+        <h3 style="color:#262730; font-family: 'Pretendard-Bold', sans-serif;">관련 뉴스 기사</h3>
+        <a href="https://www.sciencetimes.co.kr/nscvrg/view/menu/253?searchCategory=225&nscvrgSn=252864" target="_blank" style="text-decoration:none; color:#1C68D5;">
+            <p style="font-size:14px; margin:0;">
+                <span style="font-family: 'Pretendard-Bold', sans-serif;">▶︎ 기사 1: 폭염에 끓어오르는 바다, 산호초 대규모 백화현상</span>
+            </p>
+        </a>
+        <a href="https://www.planet03.com/post/%EC%8B%9D%EB%9F%89%EC%9C%84%EA%B8%B0-%EB%B0%94%EB%8B%A4%EA%B0%80-%EB%B3%B4%EB%82%B4%EB%8A%94-%EA%B2%BD%EA%B3%A0" target="_blank" style="text-decoration:none; color:#1C68D5;">
+            <p style="font-size:14px; margin-top:5px; margin-bottom:0;">
+                <span style="font-family: 'Pretendard-Bold', sans-serif;">▶︎ 기사 2: 식량위기, 바다가 보내는 경고</span>
+            </p>
+        </a>
+    </div>
+    """
+    st.markdown(banner_html, unsafe_allow_html=True)
 
 
 st.title("NOAA 산호초 백화현상 데이터 대시보드 🌊")
@@ -140,4 +139,49 @@ def create_public_data_dashboard():
     )
     
     fig, ax = plt.subplots(figsize=(12, 8))
-    world.plot(ax=ax)
+    world.plot(ax=ax, color='lightgrey', edgecolor='black')
+    
+    # 백화 현상 유무에 따라 색상과 크기 다르게 표시
+    gdf[gdf['is_bleached']].plot(
+        ax=ax,
+        marker='o',
+        color='red',
+        markersize=100,
+        alpha=0.6,
+        label='백화 위험 지역'
+    )
+    gdf[~gdf['is_bleached']].plot(
+        ax=ax,
+        marker='o',
+        color='blue',
+        markersize=50,
+        alpha=0.6,
+        label='안정 지역'
+    )
+    
+    ax.set_title("전 세계 해수 온도 이상 지역 지도", fontproperties=fm.FontProperties(fname=font_path))
+    ax.set_xlabel("경도", fontproperties=fm.FontProperties(fname=font_path))
+    ax.set_ylabel("위도", fontproperties=fm.FontProperties(fname=font_path))
+    ax.legend(prop=fm.FontProperties(fname=font_path))
+    
+    st.pyplot(fig)
+    
+    # 지역별 해수 온도 분포
+    st.subheader("지역별 해수 온도 분포")
+    
+    chart_temp_by_region = alt.Chart(df).mark_boxplot().encode(
+        x=alt.X('region:N', title='지역', sort='-y'),
+        y=alt.Y('water_temperature_c:Q', title='해수 온도 (℃)'),
+        color=alt.Color('region:N', legend=None),
+        tooltip=['region', 'min(water_temperature_c)', 'max(water_temperature_c)', 'mean(water_temperature_c)']
+    ).properties(
+        title="지역별 해수 온도 분포"
+    )
+    st.altair_chart(apply_font_to_altair(chart_temp_by_region), use_container_width=True)
+    
+    # 산호초 건강도와 해수 온도의 관계 (데이터셋 변경으로 인해 산호초 건강도 대신 해수 온도로 관계 재구성)
+    st.subheader("해수 온도와 백화 위험 관계")
+    scatter_chart = alt.Chart(df).mark_circle(size=60).encode(
+        x=alt.X('water_temperature_c:Q', title='해수 온도 (℃)'),
+        y=alt.Y('is_bleached:N', title='백화 위험'),
+        color=alt.Color('is_bleached:N',
