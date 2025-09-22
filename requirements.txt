@@ -1,8 +1,5 @@
 streamlit
 pandas
-altair
-matplotlib
-geopandas
 numpy
-Pillow
-requests
+plotly
+pytz
